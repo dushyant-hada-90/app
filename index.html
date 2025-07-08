@@ -28,7 +28,7 @@
     const canvasCtx = canvasElement.getContext('2d');
 
     // Replace with your laptop's local IP address
-    const socket = new WebSocket("ws://192.168.1.5:8765");
+    const socket = new WebSocket("ws://192.168.1.4:8765");
 
     socket.onopen = () => {
       console.log("WebSocket connected to laptop");
