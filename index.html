@@ -4,14 +4,25 @@
   <title>Index Finger Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { margin: 0; overflow: hidden; }
-    video, canvas {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100vw;
-      height: auto;
-      object-fit: cover;
-    }
+body { 
+  margin: 0; 
+  overflow: hidden;
+  /* Prevent any potential scrolling */
+  width: 100%;
+  height: 100vh;
+}
+
+video, canvas {
+  position: absolute;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+video {
+  object-fit: cover;
+}
   </style>
 </head>
 <body>
