@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Index Finger Tracker</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas, video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+  <script>
+    const videoElement = document.getElementById('video');
+    const canvasElement = document.getElementById('canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+
+    const hands = new Hands({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+    });
+
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.7
+    });
+
+    hands.onResults(results => {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+      if (results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        const indexTip = landmarks[8]; // Index finger tip
+
+        // Draw bounding box
+        canvasCtx.strokeStyle = 'red';
+        canvasCtx.lineWidth = 4;
+        canvasCtx.strokeRect(0, 0, canvasElement.width, canvasElement.height);
+
+        // Draw index finger point
+        const x = indexTip.x * canvasElement.width;
+        const y = indexTip.y * canvasElement.height;
+        canvasCtx.beginPath();
+        canvasCtx.arc(x, y, 10, 0, 2 * Math.PI);
+        canvasCtx.fillStyle = 'blue';
+        canvasCtx.fill();
+
+        // Display coordinates
+        canvasCtx.fillStyle = 'black';
+        canvasCtx.font = '20px Arial';
+        canvasCtx.fillText(`Index: (${Math.round(x)}, ${Math.round(y)})`, x + 10, y - 10);
+      }
+
+      canvasCtx.restore();
+    });
+
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        await hands.send({ image: videoElement });
+      },
+      width: window.innerWidth,
+      height: window.innerHeight
+    });
+    camera.start();
+  </script>
+</body>
+</html>
