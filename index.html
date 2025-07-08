@@ -4,10 +4,12 @@
   <title>Index Finger Tracker</title>
   <style>
     body { margin: 0; overflow: hidden; }
-    canvas, video {
+    video, canvas {
       position: absolute;
       top: 0; left: 0;
-      width: 100vw; height: 100vh;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
     }
   </style>
 </head>
@@ -15,6 +17,7 @@
   <video id="video" autoplay playsinline></video>
   <canvas id="canvas"></canvas>
 
+  <!-- MediaPipe dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -24,8 +27,19 @@
     const canvasElement = document.getElementById('canvas');
     const canvasCtx = canvasElement.getContext('2d');
 
+    // Replace with your laptop's local IP address
+    const socket = new WebSocket("ws://192.168.1.5:8765");
+
+    socket.onopen = () => {
+      console.log("WebSocket connected to laptop");
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
     const hands = new Hands({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     });
 
     hands.setOptions({
@@ -42,16 +56,18 @@
 
       if (results.multiHandLandmarks.length > 0) {
         const landmarks = results.multiHandLandmarks[0];
-        const indexTip = landmarks[8]; // Index finger tip
+        const indexTip = landmarks[8];  // Index finger tip landmark
 
-        // Draw bounding box
+        // Convert normalized (0-1) to screen coordinates
+        const x = indexTip.x * canvasElement.width;
+        const y = indexTip.y * canvasElement.height;
+
+        // Draw bounding rectangle
         canvasCtx.strokeStyle = 'red';
         canvasCtx.lineWidth = 4;
         canvasCtx.strokeRect(0, 0, canvasElement.width, canvasElement.height);
 
         // Draw index finger point
-        const x = indexTip.x * canvasElement.width;
-        const y = indexTip.y * canvasElement.height;
         canvasCtx.beginPath();
         canvasCtx.arc(x, y, 10, 0, 2 * Math.PI);
         canvasCtx.fillStyle = 'blue';
@@ -60,7 +76,12 @@
         // Display coordinates
         canvasCtx.fillStyle = 'black';
         canvasCtx.font = '20px Arial';
-        canvasCtx.fillText(`Index: (${Math.round(x)}, ${Math.round(y)})`, x + 10, y - 10);
+        canvasCtx.fillText(`(${Math.round(x)}, ${Math.round(y)})`, x + 10, y - 10);
+
+        // Send coordinates to laptop via WebSocket
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ x: Math.round(x), y: Math.round(y) }));
+        }
       }
 
       canvasCtx.restore();
